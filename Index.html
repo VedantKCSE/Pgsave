@@ -1,0 +1,605 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PG & Room Tracker</title>
+    <!-- Tailwind CSS CDN for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .page-content {
+            display: none;
+        }
+        .active-page {
+            display: block;
+        }
+        /* Custom modal animation */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideInUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .modal-fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+        .modal-slide-in {
+            animation: slideInUp 0.3s ease-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4 sm:p-6">
+
+    <!-- Main Application Container -->
+    <div class="bg-white rounded-xl shadow-2xl p-6 sm:p-10 w-full max-w-4xl mx-auto">
+        
+        <!-- Header and Navigation -->
+        <div class="flex flex-col sm:flex-row justify-between items-center mb-6 border-b pb-4">
+            <h1 class="text-3xl font-extrabold text-gray-800 mb-4 sm:mb-0">PG & Room Tracker</h1>
+            <div class="flex space-x-2">
+                <button id="addPgBtn" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-blue-700 transition duration-300">
+                    Add PG
+                </button>
+                <button id="viewAllBtn" class="bg-gray-500 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-gray-600 transition duration-300">
+                    View All
+                </button>
+            </div>
+        </div>
+
+        <!-- Page Content Container -->
+        <div id="content-container">
+            
+            <!-- Add PG Form Page -->
+            <div id="addPgPage" class="page-content active-page">
+                <form id="pgForm" class="space-y-6">
+                    <!-- Basic Info Section -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="pgName" class="block text-sm font-medium text-gray-700">PG / Room Name</label>
+                            <input type="text" id="pgName" name="pgName" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-3 border">
+                        </div>
+                        <div>
+                            <label for="pgLocation" class="block text-sm font-medium text-gray-700">Location</label>
+                            <input type="text" id="pgLocation" name="pgLocation" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-3 border">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label for="pgNotes" class="block text-sm font-medium text-gray-700">Notes & Details</label>
+                        <textarea id="pgNotes" name="pgNotes" rows="4" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-3 border"></textarea>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="pgContact1" class="block text-sm font-medium text-gray-700">Contact Number 1</label>
+                            <input type="tel" id="pgContact1" name="pgContact1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-3 border">
+                        </div>
+                        <div>
+                            <label for="pgContact2" class="block text-sm font-medium text-gray-700">Contact Number 2</label>
+                            <input type="tel" id="pgContact2" name="pgContact2" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-3 border">
+                        </div>
+                    </div>
+
+                    <!-- Amenities Checklist - This is where the checkboxes will appear -->
+                    <div class="border-t pt-6 mt-6">
+                        <h2 class="text-xl font-bold text-gray-800 mb-4">Amenities</h2>
+                        <div id="amenitiesList" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                            <!-- Checkboxes are dynamically inserted here by JavaScript -->
+                        </div>
+                    </div>
+                    
+                    <!-- Images Section -->
+                    <div class="border-t pt-6 mt-6">
+                        <h2 class="text-xl font-bold text-gray-800 mb-4">Images</h2>
+                        <input type="file" id="imageUpload" multiple accept="image/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                        <div id="imagePreview" class="flex flex-wrap gap-2 mt-4">
+                            <!-- Image previews will be displayed here -->
+                        </div>
+                    </div>
+                    
+                    <!-- Form Submission Buttons -->
+                    <div class="flex justify-end space-x-4 border-t pt-6 mt-6">
+                        <button type="button" id="cancelEditBtn" class="bg-gray-200 text-gray-800 font-semibold py-3 px-6 rounded-lg shadow-sm hover:bg-gray-300 transition duration-300 hidden">
+                            Cancel
+                        </button>
+                        <button type="submit" id="savePgBtn" class="bg-green-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:bg-green-700 transition duration-300">
+                            Save PG
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- View All PGs Page -->
+            <div id="viewAllPage" class="page-content">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold text-gray-800">Your Saved PGs</h2>
+                    <button id="generatePdfBtn" class="bg-red-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-red-700 transition duration-300">
+                        Generate PDF
+                    </button>
+                </div>
+                <div id="pgList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Saved PGs will be rendered here -->
+                </div>
+                <p id="noPgMessage" class="text-center text-gray-500 mt-8 hidden">
+                    No PGs saved yet. Add one using the "Add PG" button above!
+                </p>
+            </div>
+
+            <!-- Modal for showing detailed PG info -->
+            <div id="detailModal" class="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden modal-fade-in">
+                <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl p-6 relative modal-slide-in">
+                    <button id="closeModalBtn" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
+                    <div id="modalContent" class="overflow-y-auto max-h-[80vh]">
+                        <!-- Detailed PG info will be rendered here -->
+                    </div>
+                    <div class="flex justify-end mt-4 space-x-2">
+                        <button id="editModalBtn" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-blue-700 transition duration-300">
+                            Edit
+                        </button>
+                        <button id="deleteModalBtn" class="bg-red-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-red-700 transition duration-300">
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- jspdf library for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <script>
+        // Use an IIFE to encapsulate all the application logic
+        (function() {
+            // --- DOM Elements ---
+            const addPgBtn = document.getElementById('addPgBtn');
+            const viewAllBtn = document.getElementById('viewAllBtn');
+            const addPgPage = document.getElementById('addPgPage');
+            const viewAllPage = document.getElementById('viewAllPage');
+            const pgForm = document.getElementById('pgForm');
+            const pgNameInput = document.getElementById('pgName');
+            const pgLocationInput = document.getElementById('pgLocation');
+            const pgNotesTextarea = document.getElementById('pgNotes');
+            const pgContact1Input = document.getElementById('pgContact1');
+            const pgContact2Input = document.getElementById('pgContact2');
+            const amenitiesList = document.getElementById('amenitiesList');
+            const imageUploadInput = document.getElementById('imageUpload');
+            const imagePreviewDiv = document.getElementById('imagePreview');
+            const pgListDiv = document.getElementById('pgList');
+            const noPgMessage = document.getElementById('noPgMessage');
+            const generatePdfBtn = document.getElementById('generatePdfBtn');
+            const savePgBtn = document.getElementById('savePgBtn');
+            const cancelEditBtn = document.getElementById('cancelEditBtn');
+            const detailModal = document.getElementById('detailModal');
+            const modalContent = document.getElementById('modalContent');
+            const closeModalBtn = document.getElementById('closeModalBtn');
+            const editModalBtn = document.getElementById('editModalBtn');
+            const deleteModalBtn = document.getElementById('deleteModalBtn');
+
+            // --- App State & Data ---
+            let pgs = [];
+            let currentEditingPgId = null;
+
+            // Predefined list of common amenities
+            // This is the list that will be used to generate the checkboxes.
+            const allAmenities = [
+                "Wifi", "Refrigerator", "Washing Machine", "Water Purifier", "Geyser",
+                "Gas/Induction", "Housekeeping services", "24hrs Water Supply",
+                "Security", "Cupboard", "Study Table", "Power Backup", "Attached Bathroom"
+            ];
+
+            // --- Functions ---
+
+            // Load data from local storage on app start
+            function loadPgs() {
+                const storedPgs = localStorage.getItem('pgs');
+                if (storedPgs) {
+                    pgs = JSON.parse(storedPgs);
+                }
+                renderPgList();
+            }
+
+            // Save the current pgs array to local storage
+            function savePgs() {
+                localStorage.setItem('pgs', JSON.stringify(pgs));
+            }
+
+            // Render the amenities checkboxes dynamically
+            function renderAmenitiesCheckboxes() {
+                amenitiesList.innerHTML = '';
+                allAmenities.forEach(amenity => {
+                    const amenityId = amenity.replace(/\s+/g, '-').toLowerCase();
+                    const html = `
+                        <div class="flex items-center space-x-2">
+                            <input type="checkbox" id="${amenityId}" name="amenities" value="${amenity}" class="h-4 w-4 text-blue-600 rounded focus:ring-blue-500">
+                            <label for="${amenityId}" class="text-sm text-gray-700">${amenity}</label>
+                        </div>
+                    `;
+                    amenitiesList.insertAdjacentHTML('beforeend', html);
+                });
+            }
+
+            // Render the list of saved PGs
+            function renderPgList() {
+                pgListDiv.innerHTML = '';
+                if (pgs.length === 0) {
+                    noPgMessage.classList.remove('hidden');
+                } else {
+                    noPgMessage.classList.add('hidden');
+                    pgs.forEach(pg => {
+                        const card = document.createElement('div');
+                        card.id = `pg-card-${pg.id}`;
+                        card.className = 'bg-gray-50 rounded-lg p-5 shadow-sm hover:shadow-md transition duration-300 cursor-pointer';
+                        card.innerHTML = `
+                            <h3 class="text-xl font-bold text-gray-800">${pg.name || 'Unnamed PG'}</h3>
+                            <p class="text-gray-600 mt-1">${pg.location || 'No location specified'}</p>
+                            <p class="text-sm text-gray-400 mt-2">Added: ${new Date(pg.id).toLocaleDateString()}</p>
+                        `;
+                        card.addEventListener('click', () => showPgDetails(pg));
+                        pgListDiv.appendChild(card);
+                    });
+                }
+            }
+            
+            // Show the detailed information of a specific PG in a modal
+            function showPgDetails(pg) {
+                currentEditingPgId = pg.id;
+                modalContent.innerHTML = '';
+
+                // Create and populate the detailed view
+                const detailHtml = `
+                    <h3 class="text-3xl font-extrabold text-gray-800 mb-2">${pg.name || 'Unnamed PG'}</h3>
+                    <p class="text-lg text-gray-600 mb-4">${pg.location || 'No location specified'}</p>
+                    
+                    <div class="bg-gray-100 p-4 rounded-lg mb-4">
+                        <h4 class="text-lg font-bold mb-2">Details</h4>
+                        <p class="text-gray-700 whitespace-pre-wrap">${pg.notes || 'No notes available.'}</p>
+                    </div>
+
+                    ${(pg.contact1 || pg.contact2) ? `
+                        <div class="bg-gray-100 p-4 rounded-lg mb-4">
+                            <h4 class="text-lg font-bold mb-2">Contact</h4>
+                            ${pg.contact1 ? `<p class="text-gray-700">1. ${pg.contact1}</p>` : ''}
+                            ${pg.contact2 ? `<p class="text-gray-700">2. ${pg.contact2}</p>` : ''}
+                        </div>
+                    ` : ''}
+
+                    ${pg.amenities && pg.amenities.length > 0 ? `
+                        <div class="bg-gray-100 p-4 rounded-lg mb-4">
+                            <h4 class="text-lg font-bold mb-2">Amenities</h4>
+                            <ul class="list-disc list-inside text-gray-700">
+                                ${pg.amenities.map(a => `<li>${a}</li>`).join('')}
+                            </ul>
+                        </div>
+                    ` : ''}
+
+                    ${pg.images && pg.images.length > 0 ? `
+                        <div class="bg-gray-100 p-4 rounded-lg">
+                            <h4 class="text-lg font-bold mb-2">Images</h4>
+                            <div class="flex flex-wrap gap-2">
+                                ${pg.images.map(imgSrc => `<img src="${imgSrc}" class="w-32 h-32 object-cover rounded-md shadow-sm">`).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                `;
+                modalContent.innerHTML = detailHtml;
+                
+                // Attach event listeners to modal buttons
+                editModalBtn.onclick = () => editPg(pg.id);
+                deleteModalBtn.onclick = () => deletePg(pg.id);
+                
+                detailModal.classList.remove('hidden');
+            }
+
+            // Close the details modal
+            function closeModal() {
+                detailModal.classList.add('hidden');
+                currentEditingPgId = null;
+            }
+
+            // Load PG data into the form for editing
+            function editPg(id) {
+                closeModal();
+                const pgToEdit = pgs.find(p => p.id === id);
+                if (!pgToEdit) return;
+
+                // Switch to the add/edit page
+                switchToPage('addPgPage');
+
+                // Populate form fields
+                pgNameInput.value = pgToEdit.name;
+                pgLocationInput.value = pgToEdit.location;
+                pgNotesTextarea.value = pgToEdit.notes;
+                pgContact1Input.value = pgToEdit.contact1;
+                pgContact2Input.value = pgToEdit.contact2;
+
+                // Check amenities checkboxes
+                document.querySelectorAll('#amenitiesList input[type="checkbox"]').forEach(checkbox => {
+                    checkbox.checked = pgToEdit.amenities.includes(checkbox.value);
+                });
+
+                // Display images for editing
+                imagePreviewDiv.innerHTML = '';
+                if (pgToEdit.images) {
+                    pgToEdit.images.forEach(imgSrc => {
+                        const img = document.createElement('img');
+                        img.src = imgSrc;
+                        img.className = 'w-24 h-24 object-cover rounded-md shadow-sm';
+                        imagePreviewDiv.appendChild(img);
+                    });
+                }
+                
+                // Change button text and show cancel button
+                savePgBtn.textContent = 'Update PG';
+                cancelEditBtn.classList.remove('hidden');
+                currentEditingPgId = id;
+            }
+
+            // Delete a PG from the array
+            function deletePg(id) {
+                // Use a custom modal instead of alert() or confirm()
+                const modalHtml = `
+                    <div class="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4 modal-fade-in">
+                        <div class="bg-white rounded-lg shadow-xl w-full max-w-sm p-6 relative modal-slide-in">
+                            <h3 class="text-xl font-bold text-gray-800 mb-4">Confirm Deletion</h3>
+                            <p class="text-gray-700 mb-6">Are you sure you want to delete this PG entry? This action cannot be undone.</p>
+                            <div class="flex justify-end space-x-4">
+                                <button id="cancelDelete" class="bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300">Cancel</button>
+                                <button id="confirmDelete" class="bg-red-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-700">Delete</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+                document.getElementById('confirmDelete').addEventListener('click', () => {
+                    pgs = pgs.filter(p => p.id !== id);
+                    savePgs();
+                    renderPgList();
+                    closeModal();
+                    document.querySelector('.modal-fade-in').remove();
+                });
+
+                document.getElementById('cancelDelete').addEventListener('click', () => {
+                    document.querySelector('.modal-fade-in').remove();
+                });
+            }
+
+            // Clear the form fields and reset to "add" mode
+            function clearForm() {
+                pgForm.reset();
+                imagePreviewDiv.innerHTML = '';
+                savePgBtn.textContent = 'Save PG';
+                cancelEditBtn.classList.add('hidden');
+                currentEditingPgId = null;
+                // Clear file input value
+                imageUploadInput.value = '';
+            }
+
+            // Switch between pages
+            function switchToPage(pageId) {
+                document.querySelectorAll('.page-content').forEach(page => {
+                    page.classList.remove('active-page');
+                });
+                document.getElementById(pageId).classList.add('active-page');
+            }
+
+            // Form submission handler
+            pgForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                // Collect data from the form
+                const newPgData = {
+                    name: pgNameInput.value,
+                    location: pgLocationInput.value,
+                    notes: pgNotesTextarea.value,
+                    contact1: pgContact1Input.value,
+                    contact2: pgContact2Input.value,
+                    amenities: Array.from(document.querySelectorAll('input[name="amenities"]:checked')).map(cb => cb.value),
+                    images: []
+                };
+
+                // Read and process images
+                const imagePromises = Array.from(imageUploadInput.files).map(file => {
+                    return new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = (event) => resolve(event.target.result);
+                        reader.onerror = (error) => reject(error);
+                        reader.readAsDataURL(file);
+                    });
+                });
+
+                try {
+                    const base64Images = await Promise.all(imagePromises);
+                    newPgData.images = base64Images;
+                } catch (error) {
+                    console.error('Error reading images:', error);
+                    return; // Stop execution if there's an image error
+                }
+                
+                // If we are in edit mode
+                if (currentEditingPgId) {
+                    const pgIndex = pgs.findIndex(p => p.id === currentEditingPgId);
+                    if (pgIndex !== -1) {
+                        pgs[pgIndex] = { ...pgs[pgIndex], ...newPgData };
+                    }
+                } else {
+                    // If we are in add new mode
+                    newPgData.id = Date.now();
+                    pgs.push(newPgData);
+                }
+
+                savePgs();
+                clearForm();
+                renderPgList();
+                switchToPage('viewAllPage');
+            });
+
+            // Handle image file selection for preview
+            imageUploadInput.addEventListener('change', (e) => {
+                imagePreviewDiv.innerHTML = '';
+                const files = e.target.files;
+                if (files) {
+                    Array.from(files).forEach(file => {
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                            const img = document.createElement('img');
+                            img.src = event.target.result;
+                            img.className = 'w-24 h-24 object-cover rounded-md shadow-sm';
+                            imagePreviewDiv.appendChild(img);
+                        };
+                        reader.readAsDataURL(file);
+                    });
+                }
+            });
+
+            // --- Event Listeners ---
+            addPgBtn.addEventListener('click', () => {
+                clearForm(); // Ensure form is clear before switching
+                switchToPage('addPgPage');
+            });
+
+            viewAllBtn.addEventListener('click', () => {
+                renderPgList();
+                switchToPage('viewAllPage');
+            });
+
+            cancelEditBtn.addEventListener('click', () => {
+                clearForm();
+                switchToPage('viewAllPage');
+            });
+            
+            closeModalBtn.addEventListener('click', closeModal);
+            
+            // --- PDF Generation Logic ---
+            generatePdfBtn.addEventListener('click', async () => {
+                if (pgs.length === 0) {
+                    // Custom modal for no PGs to generate
+                    const modalHtml = `
+                        <div class="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4 modal-fade-in">
+                            <div class="bg-white rounded-lg shadow-xl w-full max-w-sm p-6 relative modal-slide-in">
+                                <h3 class="text-xl font-bold text-gray-800 mb-4">No PGs to Generate</h3>
+                                <p class="text-gray-700 mb-6">Please add at least one PG before generating a PDF.</p>
+                                <div class="flex justify-end">
+                                    <button id="closeNoPgModal" class="bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    document.body.insertAdjacentHTML('beforeend', modalHtml);
+                    document.getElementById('closeNoPgModal').addEventListener('click', () => {
+                        document.querySelector('.modal-fade-in').remove();
+                    });
+                    return;
+                }
+
+const { jsPDF } = window.jspdf;
+                const doc = new jsPDF('p', 'pt', 'a4');
+                const margin = 40;
+                let y = margin;
+                const pageWidth = doc.internal.pageSize.getWidth();
+
+                for (let i = 0; i < pgs.length; i++) {
+                    const pg = pgs[i];
+                    
+                    // Add a new page for each PG except the first one
+                    if (i > 0) {
+                        doc.addPage();
+                        y = margin;
+                    }
+                    
+                    doc.setFontSize(20);
+                    doc.setFont(undefined, 'bold');
+                    doc.text(pg.name || 'Unnamed PG', margin, y);
+                    y += 25;
+
+                    doc.setFontSize(14);
+                    doc.setFont(undefined, 'normal');
+                    doc.text(`Location: ${pg.location || 'N/A'}`, margin, y);
+                    y += 20;
+
+                    if (pg.contact1 || pg.contact2) {
+                        doc.text('Contact:', margin, y);
+                        y += 15;
+                        doc.text(`1. ${pg.contact1 || 'N/A'}`, margin + 10, y);
+                        y += 15;
+                        if (pg.contact2) {
+                            doc.text(`2. ${pg.contact2 || 'N/A'}`, margin + 10, y);
+                            y += 15;
+                        }
+                    }
+                    y += 10;
+                    
+                    if (pg.notes) {
+                        doc.setFont(undefined, 'bold');
+                        doc.text('Notes:', margin, y);
+                        y += 15;
+                        doc.setFont(undefined, 'normal');
+                        const notesLines = doc.splitTextToSize(pg.notes, pageWidth - 2 * margin);
+                        doc.text(notesLines, margin + 10, y);
+                        y += notesLines.length * 15 + 10;
+                    }
+                    
+                    if (pg.amenities && pg.amenities.length > 0) {
+                        doc.setFont(undefined, 'bold');
+                        doc.text('Amenities:', margin, y);
+                        y += 15;
+                        doc.setFont(undefined, 'normal');
+                        pg.amenities.forEach(amenity => {
+                            doc.text(`• ${amenity}`, margin + 10, y);
+                            y += 15;
+                        });
+                        y += 10;
+                    }
+                    
+                    // Add images
+                    if (pg.images && pg.images.length > 0) {
+                        doc.setFont(undefined, 'bold');
+                        doc.text('Images:', margin, y);
+                        y += 15;
+                        doc.setFont(undefined, 'normal');
+
+                        // Simple grid layout for images
+                        let x = margin;
+                        const imgSize = 100;
+                        const padding = 10;
+                        for (const imgSrc of pg.images) {
+                            // Check if image will fit on the current page, if not, add a new page
+                            if (y + imgSize + padding > doc.internal.pageSize.getHeight() - margin) {
+                                doc.addPage();
+                                y = margin;
+                                x = margin;
+                            }
+                            
+                            doc.addImage(imgSrc, 'JPEG', x, y, imgSize, imgSize);
+                            x += imgSize + padding;
+                            
+                            // Move to next row if we reach the end of the line
+                            if (x + imgSize > pageWidth - margin) {
+                                x = margin;
+                                y += imgSize + padding;
+                            }
+                        }
+                    }
+                }
+                
+                doc.save('PG_Tracker_Summary.pdf');
+            });
+            
+            // --- Initialization ---
+            renderAmenitiesCheckboxes();
+            loadPgs();
+
+        })();
+    </script>
+</body>
+</html>
